@@ -67,7 +67,7 @@ class UsersController extends Controller
     * @param $id ユーザのid
     * @return \Illuminate\Http\Response
     */
-    public function followerw($id)
+    public function followers($id)
     {
         // idの値でユーザを検索して取得
         $user = User::findOrFail($id);
