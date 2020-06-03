@@ -62,12 +62,20 @@ class User extends Authenticatable
     }
      
     /**
+    * このユーザがお気に入りの投稿（Micropostモデルとの関係を定義）
+    */
+    public function favorites()
+    {
+        return $this->belongsToMany(Micropost::class, 'favorites', 'user_id', 'micropost_id')->withTimestamps();
+    }
+    
+    /**
     * このユーザに関係するモデルの件数をロードする。
-    * 投稿件数、フォロー数、フォロワー数
+    * 投稿件数、フォロー数、フォロワー数、お気に入り投稿数
     */
     public function loadRelationshipCounts()
     {
-        $this->loadCount(['microposts', 'followings', 'followers']);
+        $this->loadCount(['microposts', 'followings', 'followers', 'favorites']);
     }
     
     /**
@@ -141,4 +149,64 @@ class User extends Authenticatable
         // それらのユーザが所有する投稿に絞り込む
         return Micropost::whereIn('user_id', $userIds);
     }
+    
+    
+    
+    /**
+    * $micropostIdで指定された投稿をお気に入りに追加する
+    * 
+    * @param init $micropostId
+    * @return bool
+    */ 
+    public function favorite($micropostId)
+    {
+        // すでにお気に入りに追加しているかの確認
+        $exist = $this->is_favorite($micropostId);
+        
+        if ($exist) {
+            // すでに追加していれば何もしない
+            return false;
+        } else {
+            // なければ追加する
+            $this->favorites()->attach($micropostId);
+            return true;
+        }
+    
+    }
+    
+    /**
+    * $micropostIdで指定された投稿をお気に入りから削除する
+    *
+    * @param int $micropostId
+    * @return bool
+    */
+    public function unfavorite($micropostId)
+    {
+        // すでにお気に入りし追加しているかの確認
+        $exist = $this->is_favorite($micropostId);
+        
+        if ($exist) {
+            // すでに追加していれば削除する
+            $this->favorites()->detach($micropostId);
+            return true;
+        } else {
+            // なければ何もしない
+            return false;
+        }
+    }
+    
+    
+    /**
+    * 指定された $micropostId の投稿をこのユーザがお気に入りに追加しているか調べる。
+    * 追加していたら true を返す。
+    *
+    * @param int $micropostId
+    * @return bool
+    */
+    public function is_favorite($micropostId)
+    {
+        // お気に入り投稿の中に $micropostId のものが存在するか
+        return $this->favorites()->where('micropost_id', $micropostId)->exists();
+    }
+    
 }
